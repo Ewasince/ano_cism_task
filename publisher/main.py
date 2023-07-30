@@ -1,14 +1,18 @@
 import logging
 import os.path
 import sys
+import threading
 import time
 from logging import handlers
 from multiprocessing import Process
+from threading import Thread
+from typing import Never
 
 import pika
 from pika.credentials import PlainCredentials
 
 from config import config
+from message_broker.dto.task import TaskStatus, StatusEnum, Task
 
 log = logging.getLogger('publisher')
 log.setLevel(logging.DEBUG)
@@ -47,35 +51,49 @@ rmq_parameters = pika.ConnectionParameters(
 )
 
 
-def start_publishing():
+def get_task_num_func():
+    task_count = 0
+    task_count_lock = threading.Lock()
+
+    def wrapped() -> int:
+        nonlocal task_count_lock
+        nonlocal task_count
+
+        with task_count_lock:
+            value = task_count
+            task_count += 1
+            return value
+        pass
+
+    return wrapped
+
+
+get_task_num = get_task_num_func()
+
+
+def start_publishing(delay: int = 3, priority: int = 10, name: str = 'publisher'):
+
     with pika.BlockingConnection(rmq_parameters) as rmq_connection:
         rmq_channel = rmq_connection.channel()
 
-        rmq_channel.queue_declare(queue=config.broker_channel_tasks)
+        rmq_channel.queue_declare(queue=config.broker_channel_tasks, arguments={"x-max-priority": 50})
 
-        basic_prop = pika.BasicProperties(priority=10)
+        basic_prop = pika.BasicProperties(priority=priority)
 
-        counter = 0
         while True:
-            # rmq_channel.basic_publish(exchange='',
-            #                           routing_key='test_key',
-            #                           body=bytes(f'test message {counter}!', 'utf-8'),
-            #                           properties=basic_prop)
+            task_local_count = get_task_num()
+            task = Task(task_number=task_local_count)
 
-            message = f'[publisher] Fictive message №{counter}'
-
-            ## noinspection PyTypeChecker
             rmq_channel.basic_publish(
                 exchange='',
                 routing_key=config.broker_channel_tasks,
-                body=bytes(message, 'utf-8'),
+                body=bytes(task.model_dump_json(), 'utf-8'),
                 properties=basic_prop,
             )
-            log.info(f'[publisher] message = {message} published!')
+            log.info(f'[{name}] message = {task_local_count} published!')
 
-            counter += 1
-            log.debug(f'[publisher] wait before new message')
-            time.sleep(3)
+            log.debug(f'[{name}] wait before new message')
+            time.sleep(delay)
             pass
     pass
 
@@ -87,8 +105,35 @@ def listen_completed_tasks():
     channel.queue_declare(queue=config.broker_channel_completed)
 
     def callback(ch, method, properties, body: bytes):
-        received_message = str(body, 'utf-8')
-        log.info(f'[publisher] {received_message=} has been processed')
+        received_task = TaskStatus.model_validate_json(body)
+
+        match received_task.status:
+            case StatusEnum.OPENED:
+                process_callback = callback_opened
+            case StatusEnum.IN_PROGRESS:
+                process_callback = callback_in_progress
+            case StatusEnum.CLOSED:
+                process_callback = callback_closed
+            case _:
+                process_callback = callback_exception
+        process_callback(ch, method, properties, received_task)
+        # received_message = str(body, 'utf-8')
+        pass
+
+    def callback_opened(ch, method, properties, task: TaskStatus):
+        log.debug(f'[publisher] {task=} opened has been processed')
+        pass
+
+    def callback_in_progress(ch, method, properties, task: TaskStatus):
+        log.debug(f'[publisher] {task=} in_progress has been processed')
+        pass
+
+    def callback_closed(ch, method, properties, task: TaskStatus):
+        log.info(f'[publisher] {task=} closed has been processed')
+        pass
+
+    def callback_exception(arg: Never, *args):
+        raise Exception('Unknown status type')
         pass
 
     channel.basic_consume(queue=config.broker_channel_completed, on_message_callback=callback, auto_ack=True)
@@ -99,13 +144,18 @@ def listen_completed_tasks():
 
 
 if __name__ == '__main__':
-    # publisher = Process(target=start_publishing, name='Main task publisher')
-    # publisher.start()
+    publisher = Thread(target=start_publishing, kwargs={'delay': 2, 'priority': 10, 'name': 'pub10'})
+    publisher.start()
 
-    checker = Process(target=listen_completed_tasks, name='Complete task checker')
-    checker.start()
+    publisher = Thread(target=start_publishing, kwargs={'delay': 4, 'priority': 20, 'name': 'pub20'})
+    publisher.start()
+
+    # checker = Process(target=listen_completed_tasks, name='Complete task checker')
+    # checker.start()
 
     #
 
-    start_publishing()
+    # start_publishing()
+
+    listen_completed_tasks()
     pass

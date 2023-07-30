@@ -5,6 +5,7 @@ import sys
 from pika import PlainCredentials, ConnectionParameters, BlockingConnection
 
 from config import config
+from message_broker.dto.task import TaskStatus, Task, StatusEnum
 
 rmq_parameters = ConnectionParameters(
     host=config.broker_host,
@@ -20,24 +21,40 @@ def start_listen():
     connection = BlockingConnection(rmq_parameters)
     channel = connection.channel()
 
-    channel.queue_declare(queue=config.broker_channel_tasks)
+    channel.queue_declare(queue=config.broker_channel_tasks, arguments={"x-max-priority": 50})
     channel.queue_declare(queue=config.broker_channel_completed)
 
-    def callback(ch, method, properties, body: bytes):
-        received_message = str(body, 'utf-8')
-        log.info(f"[consumer] Received {received_message}. Will complete in 2 seconds...")
-        time.sleep(2)
-        log.info(f"[consumer] {received_message} completed!")
-
-        message_ack = f'{received_message} completed!'
-
-        # noinspection PyTypeChecker
+    def send_task_status(task: TaskStatus):
         channel.basic_publish(
             exchange='',
             routing_key=config.broker_channel_completed,
-            body=bytes(message_ack, 'utf-8'),
+            body=bytes(task.model_dump_json(), 'utf-8'),
         )
         log.debug(f'[consumer] ack sent')
+        pass
+
+    def callback(ch, method, properties, body: bytes):
+        received_task: Task = Task.model_validate_json(body)
+
+        start_time = time.time()
+
+        time.sleep(0.1)
+        task_status = TaskStatus(task_number=received_task.task_number, elapsed_time=time.time() - start_time)
+        log.info(f"[consumer] Opened {task_status=}.")
+        send_task_status(task_status)
+
+        time.sleep(0.1)
+        task_status.status = StatusEnum.IN_PROGRESS
+        task_status.elapsed_time = time.time() - start_time
+        log.info(f"[consumer] Processed {task_status=}.")
+        send_task_status(task_status)
+
+        time.sleep(0.1)
+        task_status.status = StatusEnum.CLOSED
+        task_status.elapsed_time = time.time() - start_time
+        log.info(f"[consumer] Closed {task_status=}.")
+        send_task_status(task_status)
+
         pass
 
     channel.basic_consume(

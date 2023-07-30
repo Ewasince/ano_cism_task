@@ -6,7 +6,7 @@ from multiprocessing import Process
 
 from api.rest import app
 from config import config
-from consumer import start_listen
+from message_broker.consumer import start_listen
 
 log = logging.getLogger('')
 log.setLevel(logging.DEBUG)
