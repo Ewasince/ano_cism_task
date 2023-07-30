@@ -1,9 +1,12 @@
 import logging
+import os
 import sys
 from logging import handlers
+from multiprocessing import Process
 
 from api.rest import app
 from config import config
+from consumer import start_listen
 
 log = logging.getLogger('')
 log.setLevel(logging.DEBUG)
@@ -37,6 +40,10 @@ if __name__ == '__main__':
 
     try:
         log.info(f'Приложение запущено с параметрами: \n{config.model_dump()}')
+
+        checker = Process(target=start_listen, name='Complete task checker')
+        checker.start()
+        log.info(f'Потребитель сообщений запущен')
 
         app.run(host=config.service_host, port=config.service_port)
     except Exception as e:

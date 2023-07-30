@@ -1,4 +1,4 @@
-import logging
+import logging as log
 import time
 import sys
 
@@ -52,6 +52,7 @@ def start_listen():
 
 
 if __name__ == '__main__':
+    logging = log
     log = logging.getLogger('consumer')
     log.setLevel(logging.DEBUG)
     format = logging.Formatter(
