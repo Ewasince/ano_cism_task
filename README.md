@@ -26,5 +26,5 @@
 - Python 3, Django или FastApi 
 - Docker, docker-compose 
 - RMQ или Kafka 
-- Postgresql 
-- автотесты
+- Postgresql
+- Автотесты

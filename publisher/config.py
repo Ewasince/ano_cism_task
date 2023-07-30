@@ -1,6 +1,6 @@
 import os
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 __all__ = ['config']
 
@@ -19,17 +19,6 @@ class Config(BaseModel):
     log_level_file: str
     log_file: str
     keep_log_files: int
-
-    ## app
-    service_host: str
-    service_port: str
-
-    ## storage
-    users_storage_username: str
-    users_storage_password: str
-    users_storage_host: str
-    users_storage_port: int
-    users_storage_database: str
 
     ## broker
     broker_username: str
