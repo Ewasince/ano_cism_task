@@ -1,10 +1,16 @@
+import asyncio
 import logging
 import sys
 from logging import handlers
 
+from alembic.runtime.migration import MigrationContext
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from api.rest import app
 # from api.rest import app
 from config import config
+from storage.storage_helper import get_url_db
+
 # from service.api.rest import app
 
 log = logging.getLogger('')
@@ -35,7 +41,11 @@ if __name__ == '__main__':
     # check and init DATABASE
     # log.debug(f"[STARTUP] [DATABASE] [START] Database version start")
     try:
-        # engine = create_engine(os.getenv('DATABASE_URL', 'driver://user:pass@localhost/dbname'))
+
+        # url_object = get_url_db("postgresql+asyncpg")
+        #
+        # engine = create_async_engine(url_object)
+        #
         # conn = engine.connect()
         # context = MigrationContext.configure(conn, opts={
         #     'version_table_schema': ALEMBIC_VERSION_TABLE_SCHEMA})
@@ -45,6 +55,7 @@ if __name__ == '__main__':
 
         log.info(f'Приложение запущено с параметрами: \n{config.model_dump()}')
         # start()
+        # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         app.run(host=config.service_host, port=config.service_port)
     except Exception as e:
         log.critical(f'Critical fail: {e}')

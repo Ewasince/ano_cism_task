@@ -24,6 +24,13 @@ class Config(BaseModel):
     service_host: str
     service_port: str
 
+    ## storage
+    users_storage_username: str
+    users_storage_password: str
+    users_storage_host: str
+    users_storage_port: int
+    users_storage_database: str
+
     # делаем конфиг неизменяемым
     class Config:
         frozen = True

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 from storage.database_schema import Users
 
@@ -6,17 +7,17 @@ from storage.database_schema import Users
 class IUsersStorage(ABC):
 
     @abstractmethod
-    def create_user(self, user: Users) -> Users:
+    async def create_user(self, user: Users) -> Users:
         pass
 
     @abstractmethod
-    def read_user(self, id_: int) -> Users:
+    async def read_user(self, user: Users) -> List[Users]:
         pass
 
     @abstractmethod
-    def update_user(self, user: Users) -> Users:
+    async def update_user(self, user: Users) -> Users:
         pass
 
     @abstractmethod
-    def delete_user(self, id_: int) -> Users:
+    async def delete_user(self, user: Users) -> Users:
         pass

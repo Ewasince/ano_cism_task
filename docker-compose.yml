@@ -1,0 +1,28 @@
+#version: '1.0'
+
+services:
+  users_db:
+    image: postgres:12
+#    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5441:5432
+    volumes:
+      # db_data storage
+#      - $PWD/temp_data:/var/lib/postgresql/data
+      # init scripts
+      - $PWD/service/sql_init:/docker-entrypoint-initdb.d/
+    logging:
+      driver: json-file
+      options:
+        max-file: "10"
+        max-size: "10m"
+    networks:
+      - backend
+
+
+
+networks:
+  backend:
+    name: backend
