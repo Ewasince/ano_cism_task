@@ -1,6 +1,6 @@
 from sqlalchemy import URL
 
-from config import config
+from service.config import config
 
 
 def get_url_db(storage_driver: str):

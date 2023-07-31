@@ -1,29 +1,12 @@
-import datetime
-import json
-import logging
-import os
-import sys
-import time
-from logging import handlers
-from math import ceil
-from multiprocessing import Process
 
-# import schedule
-# from alembic.runtime.migration import MigrationContext
-# from flask import Flask, request, render_template, redirect, url_for
-from apispec import APISpec
-from apispec.ext.marshmallow import MarshmallowPlugin
-from apispec_webframeworks.flask import FlaskPlugin
-from marshmallow import Schema, fields
-from flask_swagger_ui import get_swaggerui_blueprint
-from flask import render_template, request  # Remove: import Flask
-# import connexion
+import json
+
+from flask import  request
 from flask import Flask, jsonify
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 
 from api.dto.user_creds import UserCreds
-from service.config import *
 import service.api.user_api as users_api
 
 SWAGGER_URL = ''

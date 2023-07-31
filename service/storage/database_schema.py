@@ -19,7 +19,7 @@ class Base(DeclarativeBase):
 class Users(Base):
     __tablename__ = "user_account"
 
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    id_ = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     login = sa.Column(sa.String(length=50), unique=True, nullable=False)
     password = sa.Column(sa.String(length=256), nullable=False)
 

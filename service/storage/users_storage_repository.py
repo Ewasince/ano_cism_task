@@ -1,6 +1,6 @@
 import asyncio
 from copy import copy
-from typing import Self, Optional, List
+from typing import Self, Optional, List, Never
 import logging as log
 from sqlalchemy import insert, select, update, delete, Row
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection, AsyncSession
@@ -28,18 +28,22 @@ class UsersStorageRepository(IUsersStorage):
     def _async_conn_decorator(func):
         async def wrapped(*args, **kwargs):
             self: Self = args[0]
-            async with self._engine.connect() as conn:
-                self._connection = conn
+            try:
+                async with self._engine.connect() as conn:
+                    self._connection = conn
 
-                res = await func(*args, **kwargs)
+                    res = await func(*args, **kwargs)
 
-                await self._connection.commit()
+                    await self._connection.commit()
 
-                pass  # -- conn
-
-            await self._engine.dispose()
-
-            return res
+                    return res
+                    pass  # -- conn
+            except Exception as e:
+                raise e
+            finally:
+                await self._engine.dispose()
+                pass  # -- try except finally
+            pass  # -- wrapped
 
         return wrapped
 
@@ -63,10 +67,10 @@ class UsersStorageRepository(IUsersStorage):
         smt = (
             select(Users)
         )
-        is_passed_user_id = user.id is not None
+        is_passed_user_id = user.id_ is not None
         if is_passed_user_id:
             # noinspection PyTypeChecker
-            smt = smt.where(Users.id == user.id)
+            smt = smt.where(Users.id_ == user.id_)
             pass
 
         is_passed_user_login = user.login is not None
@@ -99,7 +103,7 @@ class UsersStorageRepository(IUsersStorage):
         # noinspection PyTypeChecker
         smt = (
             update(Users).
-            where(Users.id == user.id)
+            where(Users.id_ == user.id_)
         )
         if user.login is not None:
             smt = smt.values(login=user.login)
@@ -123,7 +127,7 @@ class UsersStorageRepository(IUsersStorage):
         # noinspection PyTypeChecker
         smt = (
             delete(Users).
-            where(Users.id == user.id).
+            where(Users.id_ == user.id_).
             returning(Users)
         )
 
@@ -134,6 +138,21 @@ class UsersStorageRepository(IUsersStorage):
 
         return user_creds
 
+    @_async_conn_decorator
+    async def clear_users(self) -> List[Users]:
+        # noinspection PyTypeChecker
+        smt = (
+            delete(Users).
+            returning(Users)
+        )
+
+        res = await self._connection.execute(smt)
+        rows = res.fetchall()
+
+        user_models = [Users(**row._asdict()) for row in rows]
+
+        return user_models
+
     pass
 
 
@@ -143,24 +162,28 @@ if __name__ == '__main__':
 
         user_add = Users(login='test', password='1234')
 
-        user_added = await user_storage.create_user(user_add)
+        try:
+            user_added = await user_storage.create_user(user_add)
+            user_added = await user_storage.create_user(user_add)
+        except Exception as e:
+            pass
 
-        user_find = Users(login='test')
-
-        user_found_list = await user_storage.read_user(user_find)
-        user_found = user_found_list.pop()
-
-        user_update = copy(user_found)
-        user_update.password = 'new password'
-
-        user_updated = await user_storage.update_user(user_update)
-
-        user_find2 = Users(login='test')
-        user_found_list2 = await user_storage.read_user(user_find2)
-        user_found2 = user_found_list2.pop()
-
-        user_delete = user_found2
-        user_deleted = await user_storage.delete_user(user_delete)
+        # user_find = Users(login='test')
+        #
+        # user_found_list = await user_storage.read_user(user_find)
+        # user_found = user_found_list.pop()
+        #
+        # user_update = copy(user_found)
+        # user_update.password = 'new password'
+        #
+        # user_updated = await user_storage.update_user(user_update)
+        #
+        # user_find2 = Users(login='test')
+        # user_found_list2 = await user_storage.read_user(user_find2)
+        # user_found2 = user_found_list2.pop()
+        #
+        # user_delete = user_found2
+        # user_deleted = await user_storage.delete_user(user_delete)
 
         pass
 

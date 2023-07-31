@@ -17,45 +17,45 @@ rmq_parameters = ConnectionParameters(
 )
 
 
+def send_task_status(channel, task: StatusTask):
+    channel.basic_publish(
+        exchange='',
+        routing_key=config.broker_channel_completed,
+        body=bytes(task.model_dump_json(), 'utf-8'),
+    )
+    log.debug(f'[consumer] ack sent')
+    pass
+
+
+def callback(ch, method, properties, body: bytes):
+    received_task: Task = Task.model_validate_json(body)
+
+    start_time = time.time()
+
+    time.sleep(0.1)
+    task_status = StatusTask(task_number=received_task.task_number, elapsed_time=time.time() - start_time)
+    log.info(f"[consumer] Opened {task_status=}.")
+    send_task_status(ch, task_status)
+
+    time.sleep(0.1)
+    task_status.status = StatusEnum.IN_PROGRESS
+    task_status.elapsed_time = time.time() - start_time
+    log.info(f"[consumer] Processed {task_status=}.")
+    send_task_status(ch, task_status)
+
+    time.sleep(0.1)
+    task_status.status = StatusEnum.CLOSED
+    task_status.elapsed_time = time.time() - start_time
+    log.info(f"[consumer] Closed {task_status=}.")
+    send_task_status(ch, task_status)
+
+
 def start_listen():
     connection = BlockingConnection(rmq_parameters)
     channel = connection.channel()
 
     channel.queue_declare(queue=config.broker_channel_tasks, arguments={"x-max-priority": 50})
     channel.queue_declare(queue=config.broker_channel_completed)
-
-    def send_task_status(task: StatusTask):
-        channel.basic_publish(
-            exchange='',
-            routing_key=config.broker_channel_completed,
-            body=bytes(task.model_dump_json(), 'utf-8'),
-        )
-        log.debug(f'[consumer] ack sent')
-        pass
-
-    def callback(ch, method, properties, body: bytes):
-        received_task: Task = Task.model_validate_json(body)
-
-        start_time = time.time()
-
-        time.sleep(0.1)
-        task_status = StatusTask(task_number=received_task.task_number, elapsed_time=time.time() - start_time)
-        log.info(f"[consumer] Opened {task_status=}.")
-        send_task_status(task_status)
-
-        time.sleep(0.1)
-        task_status.status = StatusEnum.IN_PROGRESS
-        task_status.elapsed_time = time.time() - start_time
-        log.info(f"[consumer] Processed {task_status=}.")
-        send_task_status(task_status)
-
-        time.sleep(0.1)
-        task_status.status = StatusEnum.CLOSED
-        task_status.elapsed_time = time.time() - start_time
-        log.info(f"[consumer] Closed {task_status=}.")
-        send_task_status(task_status)
-
-        pass
 
     channel.basic_consume(
         queue=config.broker_channel_tasks,
