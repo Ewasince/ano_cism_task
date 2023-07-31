@@ -1,4 +1,5 @@
 import logging as log
+import os
 import time
 import sys
 
@@ -51,21 +52,25 @@ def callback(ch, method, properties, body: bytes):
 
 
 def start_listen():
-    connection = BlockingConnection(rmq_parameters)
-    channel = connection.channel()
+    try:
+        connection = BlockingConnection(rmq_parameters)
+        channel = connection.channel()
 
-    channel.queue_declare(queue=config.broker_channel_tasks, arguments={"x-max-priority": 50})
-    channel.queue_declare(queue=config.broker_channel_completed)
+        channel.queue_declare(queue=config.broker_channel_tasks, arguments={"x-max-priority": 50})
+        channel.queue_declare(queue=config.broker_channel_completed)
 
-    channel.basic_consume(
-        queue=config.broker_channel_tasks,
-        on_message_callback=callback,
-        auto_ack=True
-    )
+        channel.basic_consume(
+            queue=config.broker_channel_tasks,
+            on_message_callback=callback,
+            auto_ack=True
+        )
 
-    # print(' [*] Waiting for messages. To exit press CTRL+C')
-    log.info('[consumer] Waiting for messages')
-    channel.start_consuming()
+        # print(' [*] Waiting for messages. To exit press CTRL+C')
+        log.info('[consumer] Waiting for messages')
+        channel.start_consuming()
+    except Exception as e:
+        os._exit(1)
+        pass
 
 
 if __name__ == '__main__':

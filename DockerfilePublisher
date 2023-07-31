@@ -1,0 +1,15 @@
+FROM python:3.11-slim-buster
+
+#
+WORKDIR /app
+COPY . /app
+
+#
+RUN mkdir -p /app/logs
+
+# deps
+RUN cd /app \
+    && pip install -r requirements.txt
+
+#
+CMD chmod a+x ./run_publisher_in_docker.sh && /bin/sh ./run_publisher_in_docker.sh

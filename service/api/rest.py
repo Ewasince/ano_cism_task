@@ -1,7 +1,6 @@
-
 import json
 
-from flask import  request
+from flask import request
 from flask import Flask, jsonify
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -27,6 +26,11 @@ app.register_blueprint(swagger_ui_blueprint)
 @app.route("/spec")
 def spec():
     return jsonify(swagger(app))
+
+
+@app.route("/test", methods=['GET'])
+def test():
+    return 'Hello, World!'
 
 
 @app.route('/api/registration', methods=['POST'])
@@ -159,3 +163,5 @@ async def list_users():
     except Exception as e:
         return str(e), 500
     pass
+
+print('TESTTESTTEST')

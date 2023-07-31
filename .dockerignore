@@ -1,0 +1,19 @@
+# all git and gitlab
+.git
+.git*
+git_*
+
+# all utility
+*docker-compose*.yml
+service_*.sh
+
+# work files
+data
+
+#
+logs
+*.log
+
+# env
+*.env
+env/

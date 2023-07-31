@@ -15,7 +15,7 @@ from config import config
 from message_broker.dto.task import StatusTask, StatusEnum, Task
 from publisher import start_publishing, listen_completed_tasks
 
-log = logging.getLogger('publisher')
+log = logging.getLogger('')
 log.setLevel(logging.DEBUG)
 format = logging.Formatter(
     '%(filename)17s[LINE:%(lineno)3d]# %(levelname)-6s [%(asctime)s]  %(message)s')
@@ -66,6 +66,7 @@ if __name__ == '__main__':
     #
 
     # start_publishing()
+    log.info('##### PUBLISHER STARTED #####')
 
     listen_completed_tasks(rmq_parameters)
     pass

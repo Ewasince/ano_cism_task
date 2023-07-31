@@ -3,6 +3,7 @@ import os
 import sys
 from logging import handlers
 from multiprocessing import Process
+from threading import Thread
 
 from api.rest import app
 from config import config
@@ -41,11 +42,12 @@ if __name__ == '__main__':
     try:
         log.info(f'Приложение запущено с параметрами: \n{config.model_dump()}')
 
-        checker = Process(target=start_listen, name='Complete task checker')
+        checker = Thread(target=start_listen, name='Complete task checker')
         checker.start()
         log.info(f'Потребитель сообщений запущен')
 
         app.run(host=config.service_host, port=config.service_port)
     except Exception as e:
         log.critical(f'Critical fail: {e}')
+        os._exit(1)
     log.info('### STOP ###')

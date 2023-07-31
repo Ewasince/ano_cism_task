@@ -38,8 +38,6 @@ services:
       options:
         max-file: "10"
         max-size: "10m"
-    networks:
-      - backend
 
   rabbitmq:
     image: rabbitmq:3.10.7-management
@@ -53,6 +51,33 @@ services:
     ports:
       - 15672:15672
       - 5672:5672
+    networks:
+      - backend
+
+  service_local:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+      - users_db
+    ports:
+      - 7777:7777
+    env_file:
+      - config.sample.local.docker.env
+    networks:
+      - backend
+
+  publisher_local:
+    build:
+      context: .
+      dockerfile: DockerfilePublisher
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    env_file:
+      - config.sample.local.docker.env
     networks:
       - backend
 
