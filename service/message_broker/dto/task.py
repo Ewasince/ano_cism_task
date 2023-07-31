@@ -17,7 +17,7 @@ class Task(BaseModel):
     pass
 
 
-class TaskStatus(BaseModel):
+class StatusTask(BaseModel):
     task_number: int
     status: StatusEnum = StatusEnum.OPENED
     elapsed_time: float

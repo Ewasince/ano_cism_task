@@ -5,7 +5,7 @@ import sys
 from pika import PlainCredentials, ConnectionParameters, BlockingConnection
 
 from config import config
-from message_broker.dto.task import TaskStatus, Task, StatusEnum
+from message_broker.dto.task import StatusTask, Task, StatusEnum
 
 rmq_parameters = ConnectionParameters(
     host=config.broker_host,
@@ -24,7 +24,7 @@ def start_listen():
     channel.queue_declare(queue=config.broker_channel_tasks, arguments={"x-max-priority": 50})
     channel.queue_declare(queue=config.broker_channel_completed)
 
-    def send_task_status(task: TaskStatus):
+    def send_task_status(task: StatusTask):
         channel.basic_publish(
             exchange='',
             routing_key=config.broker_channel_completed,
@@ -39,7 +39,7 @@ def start_listen():
         start_time = time.time()
 
         time.sleep(0.1)
-        task_status = TaskStatus(task_number=received_task.task_number, elapsed_time=time.time() - start_time)
+        task_status = StatusTask(task_number=received_task.task_number, elapsed_time=time.time() - start_time)
         log.info(f"[consumer] Opened {task_status=}.")
         send_task_status(task_status)
 

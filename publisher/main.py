@@ -12,7 +12,7 @@ import pika
 from pika.credentials import PlainCredentials
 
 from config import config
-from message_broker.dto.task import TaskStatus, StatusEnum, Task
+from message_broker.dto.task import StatusTask, StatusEnum, Task
 
 log = logging.getLogger('publisher')
 log.setLevel(logging.DEBUG)
@@ -105,7 +105,7 @@ def listen_completed_tasks():
     channel.queue_declare(queue=config.broker_channel_completed)
 
     def callback(ch, method, properties, body: bytes):
-        received_task = TaskStatus.model_validate_json(body)
+        received_task = StatusTask.model_validate_json(body)
 
         match received_task.status:
             case StatusEnum.OPENED:
@@ -120,15 +120,15 @@ def listen_completed_tasks():
         # received_message = str(body, 'utf-8')
         pass
 
-    def callback_opened(ch, method, properties, task: TaskStatus):
+    def callback_opened(ch, method, properties, task: StatusTask):
         log.debug(f'[publisher] {task=} opened has been processed')
         pass
 
-    def callback_in_progress(ch, method, properties, task: TaskStatus):
+    def callback_in_progress(ch, method, properties, task: StatusTask):
         log.debug(f'[publisher] {task=} in_progress has been processed')
         pass
 
-    def callback_closed(ch, method, properties, task: TaskStatus):
+    def callback_closed(ch, method, properties, task: StatusTask):
         log.info(f'[publisher] {task=} closed has been processed')
         pass
 
