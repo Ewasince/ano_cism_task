@@ -13,6 +13,11 @@ services:
       - postgres:/var/lib/postgresql/data
       # init scripts
       - $PWD/service/sql_init:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: pg_isready -U postgres -d postgres
+      interval: 10s
+      timeout: 3s
+      retries: 3
     logging:
       driver: json-file
       options:
@@ -51,6 +56,11 @@ services:
     ports:
       - 15672:15672
       - 5672:5672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
     networks:
       - backend
 
@@ -60,8 +70,10 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     depends_on:
-      - rabbitmq
-      - users_db
+      users_db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     ports:
       - 7777:7777
     env_file:
@@ -75,11 +87,14 @@ services:
       dockerfile: DockerfilePublisher
     restart: on-failure
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - config.sample.local.docker.env
     networks:
       - backend
+
+
 
 
 
